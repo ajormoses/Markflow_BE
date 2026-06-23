@@ -1,7 +1,7 @@
 import express from "express";
 import cookieSession from "cookie-session";
 import cors from 'cors'
-import { errorHandler } from "./src/middleware/errorhandler.js";
+import { errorHandler, currentUserMiddleware } from "./src/middleware/index.js";
 import userRouter from './src/routes/user.routes.js'
 
 
@@ -20,6 +20,8 @@ app.use(cookieSession({
     signed: false,
     secure: false,
 }))
+
+app.use(currentUserMiddleware);
 
 
 app.use(userRouter);
