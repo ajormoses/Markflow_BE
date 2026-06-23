@@ -1,5 +1,5 @@
-import { BadRequestError, NotFoundError } from "../errors/index"
-import { User } from "../models/user.model";
+import { BadRequestError, NotFoundError } from "../errors/index.js"
+import { User } from "../models/user.model.js";
 import jwt from 'jsonwebtoken'
 
 

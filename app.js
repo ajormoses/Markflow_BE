@@ -2,6 +2,7 @@ import express from "express";
 import cookieSession from "cookie-session";
 import cors from 'cors'
 import { errorHandler } from "./src/middleware/errorhandler.js";
+import userRouter from './src/routes/user.routes.js'
 
 
 const app = express();
@@ -21,6 +22,7 @@ app.use(cookieSession({
 }))
 
 
+app.use(userRouter);
 
 app.use(errorHandler);
 

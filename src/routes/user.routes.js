@@ -23,3 +23,6 @@ router.post("/login",
 router.post("/register", registerUser);
 router.post("/logout", logout);
 router.get('/current-user', currentUser)
+
+
+export default router
