@@ -26,7 +26,12 @@ const bookmarkSchema = new mongoose.Schema(
         },
 
         category: {
-            type: [String],
+            type: [
+                {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "Category"
+                }
+            ],
             required: true,
             validate: {
                 validator: (value) => Array.isArray(value) && value.length > 0,

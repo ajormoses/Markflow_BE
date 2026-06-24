@@ -1,19 +1,20 @@
-import { Category } from "../models/category.model";
-import {badRequestError, NotFoundError} from "../errors/index.js"
+import { Category } from "../models/category.model.js";
+import { NotFoundError, BadRequestError} from "../errors/index.js"
 
 const createCategory = async (req, res, next) => {
     const {name, icon, color} = req.body
 
     //validate
     if(!name) {
-        throw new badRequestError('Title is required')
+        throw new BadRequestError('Name is required')
     }
 
     // create category
     const category = await Category.create({
         name,
         icon,
-        color
+        color,
+        user: req.currentUser._id
     })
 
     res.status(201).json({
@@ -32,7 +33,7 @@ const updateCategory = async (req, res, next) => {
     })
 
     if(!findCategoryId) {
-        throw new badRequestError('Id is required')
+        throw new BadRequestError('Id is required')
     }
 
     const category = await Category.findByIdAndUpdate({

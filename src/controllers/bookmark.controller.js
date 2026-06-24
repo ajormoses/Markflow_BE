@@ -40,10 +40,10 @@ const updateBookmark = async (req, res) => {
         },
         req.body,
         {
-            new: true,
+            new: true,  // returns new document, very important! gives recent update
             runValidators: true
         }
-    ).populate("user");
+    ).populate(["user"]);
 
     if (!updatedBookmark) {
         throw new NotFoundError("Bookmark not found");
@@ -109,7 +109,7 @@ const getBookmarks = async (req, res) => {
     query = query.skip(skip).limit(pageLimit);
 
     const [bookmarks, total] = await Promise.all([
-        query,
+        query.populate("category"),
         Bookmark.countDocuments(filter)
     ]);
 
@@ -136,7 +136,10 @@ const getBookmarkById = async (req, res) => {
     {
         $inc: { visitCount: 1 }
     },
-    );
+    {
+        new: true
+    }
+    ).populate("category");;
 
     if (!bookmark) {
         throw new NotFoundError("Bookmark not found");
@@ -150,7 +153,7 @@ const getBookmarkById = async (req, res) => {
 const getFrequentlyVisitedBookmarks = async (req, res) => {
     const bookmarks = await Bookmark.find({
         user: req.currentUser._id
-    })
+    }).populate("category")
     .sort({ visitCount: -1 })
 
     res.status(200).json({
