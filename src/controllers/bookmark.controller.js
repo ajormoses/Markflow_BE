@@ -89,6 +89,23 @@ const getBookmarks = async (req, res) => {
     });
 };
 
+const getBookmarkById = async (req, res) => {
+    const { id } = req.params;
+
+    const bookmark = await Bookmark.findOne({
+        _id: id,
+        user: req.currentUser._id
+    });
+
+    if (!bookmark) {
+        throw new NotFoundError("Bookmark not found");
+    }
+
+    res.status(200).json({
+        bookmark
+    });
+};
+
 
 const deleteBookmark = async (req, res, next) => {
     const {id} = req.params
@@ -117,5 +134,6 @@ export {
     createBookmark,
     updateBookmark,
     getBookmarks,
+    getBookmarkById,
     deleteBookmark
 }

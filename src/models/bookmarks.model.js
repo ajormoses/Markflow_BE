@@ -29,7 +29,7 @@ const bookmarkSchema = new mongoose.Schema(
             type: [String],
             required: true,
             validate: {
-                validator: (value) => value.length > 0,
+                validator: (value) => Array.isArray(value) && value.length > 0,
                 message: "At least one category is required",
             },
         },
