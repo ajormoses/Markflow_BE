@@ -3,6 +3,7 @@ import cookieSession from "cookie-session";
 import cors from 'cors'
 import { errorHandler, currentUserMiddleware } from "./src/middleware/index.js";
 import userRouter from './src/routes/user.routes.js'
+import bookmarkRouter from "./src/routes/bookmark.routes.js"
 
 
 const app = express();
@@ -25,6 +26,7 @@ app.use(currentUserMiddleware);
 
 
 app.use(userRouter);
+app.use(bookmarkRouter);
 
 app.use(errorHandler);
 

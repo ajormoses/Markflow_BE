@@ -1,5 +1,6 @@
-import { Bookmark } from "../models/bookmarks.model";
-import BadRequestError from "../errors/index.js"
+import { Bookmark } from "../models/bookmarks.model.js";
+import { BadRequestError } from "../errors/index.js"
+
 
 
 const createBookmark = async (req, res, next) => {
