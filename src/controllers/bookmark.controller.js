@@ -57,7 +57,15 @@ const updateBookmark = async (req, res) => {
 
 
 const getBookmarks = async (req, res) => {
-    const { id, category, title, rating } = req.query;
+    const {
+        id,
+        category,
+        title,
+        rating,
+        sort,
+        page = 1,
+        limit = 20
+    } = req.query;
 
     const filter = {
         user: req.currentUser._id
@@ -74,7 +82,7 @@ const getBookmarks = async (req, res) => {
     if (title) {
         filter.title = {
             $regex: title,
-            $options: "i"  // means case insensitive
+            $options: "i"
         };
     }
 
@@ -82,20 +90,53 @@ const getBookmarks = async (req, res) => {
         filter.rating = Number(rating);
     }
 
-    const bookmarks = await Bookmark.find(filter);
+    const currentPage = Math.max(Number(page), 1);
+    const pageLimit = Math.max(Number(limit), 1);
+
+    const skip = (currentPage - 1) * pageLimit;
+
+    let query = Bookmark.find(filter);
+
+    // Sort
+    if (sort) {
+        query = query.sort(sort);
+    } else {
+        // default sort: newest first
+        query = query.sort("-createdAt");
+    }
+
+    // Pagination
+    query = query.skip(skip).limit(pageLimit);
+
+    const [bookmarks, total] = await Promise.all([
+        query,
+        Bookmark.countDocuments(filter)
+    ]);
 
     res.status(200).json({
-        bookmarks
+        bookmarks,
+        pagination: {
+            page: currentPage,
+            limit: pageLimit,
+            total,
+            totalPages: Math.ceil(total / pageLimit),
+            hasNextPage: currentPage < Math.ceil(total / pageLimit),
+            hasPrevPage: currentPage > 1
+        }
     });
 };
 
 const getBookmarkById = async (req, res) => {
     const { id } = req.params;
 
-    const bookmark = await Bookmark.findOne({
+    const bookmark = await Bookmark.findOneAndUpdate({
         _id: id,
         user: req.currentUser._id
-    });
+    },
+    {
+        $inc: { visitCount: 1 }
+    },
+    );
 
     if (!bookmark) {
         throw new NotFoundError("Bookmark not found");
@@ -103,6 +144,17 @@ const getBookmarkById = async (req, res) => {
 
     res.status(200).json({
         bookmark
+    });
+};
+
+const getFrequentlyVisitedBookmarks = async (req, res) => {
+    const bookmarks = await Bookmark.find({
+        user: req.currentUser._id
+    })
+    .sort({ visitCount: -1 })
+
+    res.status(200).json({
+        bookmarks
     });
 };
 
@@ -135,5 +187,6 @@ export {
     updateBookmark,
     getBookmarks,
     getBookmarkById,
-    deleteBookmark
+    deleteBookmark,
+    getFrequentlyVisitedBookmarks
 }

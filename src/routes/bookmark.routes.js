@@ -1,11 +1,12 @@
 import { Router } from "express";
-import { body } from "express-validator";
+import { body, param } from "express-validator";
 import {
     createBookmark,
     getBookmarks,
     getBookmarkById,
     updateBookmark,
-    deleteBookmark
+    deleteBookmark,
+    getFrequentlyVisitedBookmarks
 } from "../controllers/bookmark.controller.js";
 import { validateRequest, requireAuth } from "../middleware/index.js";
 
@@ -22,7 +23,18 @@ router.post(
 
         body("url")
             .notEmpty()
-            .withMessage("URL is required")
+            .isURL()
+            .withMessage("URL is required"),
+
+       body("category")
+            .optional()
+            .isArray({ min: 1 })
+            .withMessage("At least one category is required"),
+
+        body("rating")
+            .optional()
+            .isInt({ min: 1, max: 5 })
+            .withMessage("Rating must be between 1 and 5")
     ],
     validateRequest,
     createBookmark
@@ -30,24 +42,55 @@ router.post(
 
 router.get("/bookmarks", getBookmarks);
 
-router.get("/bookmarks/:id", getBookmarkById);
+router.get("/bookmarks/frequent", getFrequentlyVisitedBookmarks);
+
+router.get("/bookmarks/:id",
+    [
+        param("id")
+        .isMongoId()
+        .withMessage("Invalid bookmark id")
+    ],
+    validateRequest,
+    getBookmarkById);
 
 router.patch("/bookmarks/:id", 
     [
+        param("id")
+            .isMongoId()
+            .withMessage("Invalid bookmark id"),
+
         body("title")
-        .optional()
-        .notEmpty()
-        .withMessage("Title cannot be empty"),
+            .optional()
+            .notEmpty() 
+            .withMessage("Title cannot be empty"),
 
         body("url")
-        .optional()
-        .notEmpty()
-        .withMessage("URL cannot be empty")
+            .optional()
+            .isURL()
+            .notEmpty()
+            .withMessage("URL cannot be empty"),
+
+        body("category")
+            .optional()
+            .isArray({ min: 1 })
+            .withMessage("At least one category is required"),
+
+        body("rating")
+            .optional()
+            .isInt({ min: 1, max: 5 })
+            .withMessage("Rating must be between 1 and 5")
     ],
     validateRequest,
     updateBookmark
 );
 
-router.delete("/bookmarks/:id", deleteBookmark);
+router.delete("/bookmarks/:id",
+    [
+        param("id")
+        .isMongoId()
+        .withMessage("Invalid bookmark id")
+    ],
+    validateRequest,
+    deleteBookmark);
 
 export default router;

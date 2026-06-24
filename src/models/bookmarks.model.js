@@ -43,6 +43,11 @@ const bookmarkSchema = new mongoose.Schema(
         imageIcon: {
             type: String,
         },
+
+        visitCount: {
+            type: Number,
+            default: 0
+        },
     },
     {
         timestamps: true,
