@@ -54,6 +54,11 @@ const bookmarkSchema = new mongoose.Schema(
             }
         },
 
+        isFavorite: {
+            type: Boolean,
+            default: false,
+        },
+
         visitCount: {
             type: Number,
             default: 0

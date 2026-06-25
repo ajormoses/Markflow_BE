@@ -1,11 +1,12 @@
 import { Bookmark } from "../models/bookmarks.model.js";
-import { BadRequestError } from "../errors/index.js"
+import { BadRequestError, NotFoundError } from "../errors/index.js"
 import { Settings } from "../models/settings.model.js";
+import cloudinary from "../config/cloudinary.js"
 
 
 
 const createBookmark = async (req, res, next) => {
-    const { title, description, rating, url, category } = req.body
+    const { title, description, rating, url, category, isFavorite } = req.body
 
     // Validate
     if (!title || !url) {
@@ -21,6 +22,7 @@ const createBookmark = async (req, res, next) => {
         title,
         description,
         url,
+        isFavorite,
         logo: req.file
             ? {
                   url: req.file.path,
@@ -36,17 +38,19 @@ const createBookmark = async (req, res, next) => {
     });
 
     res.status(201).json({message: "Bookmark created successfully", bookmark});
+
 }
 
 
-const updateBookmark = async (req, res) => {
+const updateBookmark = async (req, res, next) => {
     const { id } = req.params;
 
-    if (!id) {
-        throw new BadRequestError("Bookmark id is required");
-    }
+    const bookmark = await Bookmark.findOne({
+        _id: id,
+        user: req.currentUser._id
+    });
 
-    if (!updatedBookmark) {
+    if (!bookmark) {
         throw new NotFoundError("Bookmark not found");
     }
 
@@ -54,15 +58,19 @@ const updateBookmark = async (req, res) => {
         ...req.body
     };
 
+    if (req.body.category) {
+        updateData.category = Array.isArray(req.body.category)
+            ? req.body.category
+            : [req.body.category];
+    }
+
     if (req.file) {
-        // Delete old file
-        if (Bookmark.logo?.publicId) {
+        if (bookmark.logo?.publicId) {
             await cloudinary.uploader.destroy(
-                Bookmark.logo.publicId
+                bookmark.logo.publicId
             );
         }
 
-        // Replace with new one
         updateData.logo = {
             url: req.file.path,
             publicId: req.file.filename
@@ -78,13 +86,14 @@ const updateBookmark = async (req, res) => {
             $set: updateData
         },
         {
-            new: true,  // returns new document, very important! gives recent update
+            new: true,
             runValidators: true
         }
-    ).populate("user");
+    ).populate("user")
+        .populate("category");
 
     res.status(200).json({
-        message: "Bookmark updated successfully", 
+        message: "Bookmark updated successfully",
         bookmark: updatedBookmark
     });
 };
@@ -97,6 +106,7 @@ const getBookmarks = async (req, res) => {
         title,
         rating,
         sort,
+        isFavorite,
         page = 1,
         limit = 20
     } = req.query;
@@ -111,6 +121,14 @@ const getBookmarks = async (req, res) => {
 
     if (category) {
         filter.category = category;
+    }
+    
+    if (isFavorite === "true") {
+        filter.isFavorite = true;
+    }
+
+    if (isFavorite === "false") {
+        filter.isFavorite = false;
     }
 
     if (title) {
@@ -195,25 +213,41 @@ const getFrequentlyVisitedBookmarks = async (req, res) => {
     });
 };
 
-
-const deleteBookmark = async (req, res, next) => {
-    const {id} = req.params
-
-    if (!id) {
-        throw new BadRequestError("Bookmark id is required");
-    }
+const toggleFavorite = async (req, res) => {
+    const { id } = req.params;
 
     const bookmark = await Bookmark.findOne({
         _id: id,
         user: req.currentUser._id
-
     });
 
     if (!bookmark) {
         throw new NotFoundError("Bookmark not found");
     }
 
-    // Delete logo from Cloudinary
+    bookmark.isFavorite = !bookmark.isFavorite;
+
+    await bookmark.save();
+
+    res.status(200).json({
+        message: "Favorite status updated",
+        bookmark
+    });
+
+};
+
+const deleteBookmark = async (req, res, next) => {
+    const { id } = req.params;
+
+    const bookmark = await Bookmark.findOne({
+        _id: id,
+        user: req.currentUser._id
+    });
+
+    if (!bookmark) {
+        throw new NotFoundError("Bookmark not found");
+    }
+
     if (bookmark.logo?.publicId) {
         await cloudinary.uploader.destroy(
             bookmark.logo.publicId
@@ -223,9 +257,9 @@ const deleteBookmark = async (req, res, next) => {
     await bookmark.deleteOne();
 
     res.status(200).json({
-        message: 'Bookmark successfully deleted'
-    })
-}
+        message: "Bookmark successfully deleted"
+    });
+};
 
 
 export {
@@ -234,5 +268,6 @@ export {
     getBookmarks,
     getBookmarkById,
     deleteBookmark,
-    getFrequentlyVisitedBookmarks
+    getFrequentlyVisitedBookmarks,
+    toggleFavorite
 }

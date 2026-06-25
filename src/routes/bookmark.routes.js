@@ -5,7 +5,7 @@ import {
     getBookmarkById,
     updateBookmark,
     deleteBookmark,
-    getFrequentlyVisitedBookmarks
+    getFrequentlyVisitedBookmarks, toggleFavorite
 } from "../controllers/bookmark.controller.js";
 import { validateRequest, requireAuth } from "../middleware/index.js";
 import { createBookmarKValidation, updateBookmarkValidation, validateId } from "../constants/validation/bookmark.validate.js";
@@ -37,6 +37,10 @@ router.patch("/bookmarks/:id",
     updateBookmarkValidation,
     validateRequest,
     updateBookmark
+);
+
+router.patch("/bookmarks/:id/favorite", 
+    toggleFavorite
 );
 
 router.delete("/bookmarks/:id",
