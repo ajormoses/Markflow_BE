@@ -7,6 +7,9 @@ import app from "./app.js";
 const PORT = process.env.PORT;
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_KEY;
+const CLOUDINARY_API_KEY = process.env.CLOUDINARY_API_KEY;
+const CLOUDINARY_API_SECRET = process.env.CLOUDINARY_API_SECRET;
+const CLOUDINARY_CLOUD_NAME = process.env.CLOUDINARY_CLOUD_NAME;
 
 const startServer = async () => {
     if (!MONGO_URI) {
@@ -15,6 +18,18 @@ const startServer = async () => {
 
     if (!JWT_SECRET) {
         throw new Error("JWT_SECRET is required");
+    }
+
+    if (!CLOUDINARY_CLOUD_NAME) {
+        throw new Error("CLOUDINARY_CLOUD_NAME is required");
+    }
+    
+    if (!CLOUDINARY_API_KEY) {
+        throw new Error("CLOUDINARY_API_KEY is required");
+    }
+    
+    if (!CLOUDINARY_API_SECRET) {
+        throw new Error("CLOUDINARY_API_SECRET is required");
     }
 
     try {

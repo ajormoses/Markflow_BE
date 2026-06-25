@@ -8,7 +8,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "migrate:isFavorite": "node migrations/20260625_add_isFavorite.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
