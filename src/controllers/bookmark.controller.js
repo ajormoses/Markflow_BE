@@ -12,6 +12,7 @@ const createBookmark = async (req, res, next) => {
         throw new BadRequestError('Title or Url is required')
     }
 
+    // In the case where we have a default rating / category in settings
     const settings = await Settings.findOne({
         user: req.currentUser._id
     });
