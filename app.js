@@ -5,6 +5,7 @@ import { errorHandler, currentUserMiddleware } from "./src/middleware/index.js";
 import userRouter from './src/routes/user.routes.js'
 import bookmarkRouter from "./src/routes/bookmark.routes.js"
 import categoryRouter from "./src/routes/category.routes.js"
+import settingRouter from './src/routes/settings.routes.js'
 
 
 const app = express();
@@ -29,6 +30,7 @@ app.use(currentUserMiddleware);
 app.use(userRouter);
 app.use(bookmarkRouter);
 app.use(categoryRouter);
+app.use(settingRouter);
 
 app.use(errorHandler);
 
