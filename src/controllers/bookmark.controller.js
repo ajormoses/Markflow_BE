@@ -5,7 +5,7 @@ import { Settings } from "../models/settings.model.js";
 
 
 const createBookmark = async (req, res, next) => {
-    const { title, description, rating, url, imageIcon, category } = req.body
+    const { title, description, rating, url, category } = req.body
 
     // Validate
     if (!title || !url) {
@@ -21,7 +21,12 @@ const createBookmark = async (req, res, next) => {
         title,
         description,
         url,
-        imageIcon,
+        logo: req.file
+            ? {
+                  url: req.file.path,
+                  publicId: req.file.filename
+              }
+            : undefined,
         category:
             category?.length > 0
                 ? category : settings?.defaultCategory ? [settings.defaultCategory] : [],
@@ -41,21 +46,42 @@ const updateBookmark = async (req, res) => {
         throw new BadRequestError("Bookmark id is required");
     }
 
+    if (!updatedBookmark) {
+        throw new NotFoundError("Bookmark not found");
+    }
+
+    const updateData = {
+        ...req.body
+    };
+
+    if (req.file) {
+        // Delete old file
+        if (Bookmark.logo?.publicId) {
+            await cloudinary.uploader.destroy(
+                Bookmark.logo.publicId
+            );
+        }
+
+        // Replace with new one
+        updateData.logo = {
+            url: req.file.path,
+            publicId: req.file.filename
+        };
+    }
+
     const updatedBookmark = await Bookmark.findOneAndUpdate(
         {
             _id: id,
             user: req.currentUser._id
         },
-        req.body,
+        {
+            $set: updateData
+        },
         {
             new: true,  // returns new document, very important! gives recent update
             runValidators: true
         }
-    ).populate(["user"]);
-
-    if (!updatedBookmark) {
-        throw new NotFoundError("Bookmark not found");
-    }
+    ).populate("user");
 
     res.status(200).json({
         message: "Bookmark updated successfully", 
@@ -177,15 +203,24 @@ const deleteBookmark = async (req, res, next) => {
         throw new BadRequestError("Bookmark id is required");
     }
 
-    const bookmark = await Bookmark.findOneAndDelete({
+    const bookmark = await Bookmark.findOne({
         _id: id,
         user: req.currentUser._id
-    
-    })
 
-    if(!bookmark) {
-        throw new BadRequestError('Bookmark not found')
+    });
+
+    if (!bookmark) {
+        throw new NotFoundError("Bookmark not found");
     }
+
+    // Delete logo from Cloudinary
+    if (bookmark.logo?.publicId) {
+        await cloudinary.uploader.destroy(
+            bookmark.logo.publicId
+        );
+    }
+
+    await bookmark.deleteOne();
 
     res.status(200).json({
         message: 'Bookmark successfully deleted'

@@ -45,8 +45,13 @@ const bookmarkSchema = new mongoose.Schema(
             max: 5,
         },
 
-        imageIcon: {
-            type: String,
+        logo: {
+            url: {
+                type: String
+            },
+            publicId: {
+                type: String
+            }
         },
 
         visitCount: {
