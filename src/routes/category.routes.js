@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { createCategory, getCategory, getCategoryById, updateCategory, deleteCategory } from "../controllers/category.controller.js";
 import { validateRequest, requireAuth } from "../middleware/index.js";
-import { body, param } from "express-validator";
+import { createCategoryValidate, updateCategoryValidate, validateId } from "../constants/validation/category.validate.js";
 
 
 const router = Router()
@@ -10,11 +10,7 @@ router.use(requireAuth)
 
 router.post(
     "/categories",
-    [
-        body("name")
-            .notEmpty()
-            .withMessage("Name is required"),
-    ],
+    createCategoryValidate,
     validateRequest,
     createCategory
 );
@@ -23,35 +19,18 @@ router.get("/categories", getCategory);
 
 
 router.get("/categories/:id",
-    [
-        param("id")
-        .isMongoId()
-        .withMessage("Invalid category id")
-    ],
+    validateId,
     validateRequest,
     getCategoryById);
 
 router.patch("/categories/:id", 
-    [
-        param("id")
-            .isMongoId()
-            .withMessage("Invalid category id"),
-
-            body("name")
-            .optional()
-            .notEmpty()
-            .withMessage("Name cannot be empty")
-    ],
+    updateCategoryValidate,
     validateRequest,
     updateCategory
 );
 
 router.delete("/categories/:id",
-    [
-        param("id")
-        .isMongoId()
-        .withMessage("Invalid category id")
-    ],
+    validateId,
     validateRequest,
     deleteCategory);
 
