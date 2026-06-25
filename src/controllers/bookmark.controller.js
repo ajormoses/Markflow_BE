@@ -1,5 +1,6 @@
 import { Bookmark } from "../models/bookmarks.model.js";
 import { BadRequestError } from "../errors/index.js"
+import { Settings } from "../models/settings.model.js";
 
 
 
@@ -11,13 +12,19 @@ const createBookmark = async (req, res, next) => {
         throw new BadRequestError('Title or Url is required')
     }
 
+    const settings = await Settings.findOne({
+        user: req.currentUser._id
+    });
+
     const bookmark = await Bookmark.create({
         title,
         description,
         url,
-        category,
-        rating,
         imageIcon,
+        category:
+            category?.length > 0
+                ? category : settings?.defaultCategory ? [settings.defaultCategory] : [],
+        rating: rating ?? settings?.defaultRating,
         user: req.currentUser._id
 
     });
