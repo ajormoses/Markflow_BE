@@ -8,8 +8,6 @@ const router = Router()
 
 router.use(requireAuth);
 
-
-router.post('/settings', settingsValidation, validateRequest, createSettings);
 router.patch('/settings', settingsValidation, validateRequest, updateSettings)
 
 
