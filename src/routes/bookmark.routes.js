@@ -28,6 +28,12 @@ router.get("/bookmarks", getBookmarks);
 
 router.get("/bookmarks/frequent", getFrequentlyVisitedBookmarks);
 
+router.get('/bookmarks/export', exportBookmarks);
+
+router.post('/bookmarks/import',
+    csvUpload.single("file"),
+    importBookmarks);
+
 router.get("/bookmarks/:id",
     validateId,
     validateRequest,
@@ -49,10 +55,6 @@ router.delete("/bookmarks/:id",
     validateRequest,
     deleteBookmark);
 
-router.get('/bookmarks/export', exportBookmarks);
 
-router.post('/bookmarks/import',
-    csvUpload.single("file"),
-    importBookmarks);
 
 export default router;
