@@ -327,6 +327,7 @@ const importBookmarks = async (req, res, next) => {
         }
 
         const rows = [];
+
         await new Promise((resolve, reject) => {
             fs.createReadStream(req.file.path)
                 .pipe(csv())
@@ -337,11 +338,19 @@ const importBookmarks = async (req, res, next) => {
                 .on("error", reject);
         });
 
+
         let imported = 0;
         let duplicates = 0;
 
         for (const row of rows) {
-            // Check duplicate URL
+            console.log("Processing:", row);
+
+            // Skip invalid rows
+            if (!row.Title || !row.URL) {
+                continue;
+            }
+
+            // Check duplicate
             const exists = await Bookmark.findOne({
                 user: req.currentUser._id,
                 url: row.URL
@@ -352,12 +361,13 @@ const importBookmarks = async (req, res, next) => {
                 continue;
             }
 
-            // Convert categories
+            // Handle categories
             const categoryNames = row.Category
                 ? row.Category.split(",").map((c) => c.trim())
                 : [];
 
             const categoryIds = [];
+
             for (const name of categoryNames) {
                 let category = await Category.findOne({
                     name,
@@ -369,27 +379,31 @@ const importBookmarks = async (req, res, next) => {
                         name,
                         user: req.currentUser._id
                     });
-
                 }
+
                 categoryIds.push(category._id);
             }
 
             await Bookmark.create({
                 title: row.Title,
                 url: row.URL,
-                description: row.Description,
-                rating: Number(row.Rating),
-                isFavorite: row.Favorite === "true",
+                description: row.Description || "",
+                rating: row.Rating ? Number(row.Rating) : undefined,
+                isFavorite: String(row.Favorite).toLowerCase() === "true",
                 category: categoryIds,
                 visitCount: Number(row.Visits || 0),
                 user: req.currentUser._id
             });
+
             imported++;
         }
 
         // Delete uploaded CSV
-        fs.unlinkSync(req.file.path);
-        res.status(200).json({
+        if (fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+
+        return res.status(200).json({
             message: "Bookmarks imported successfully.",
             summary: {
                 totalRows: rows.length,
@@ -397,10 +411,12 @@ const importBookmarks = async (req, res, next) => {
                 duplicates
             }
         });
+
     } catch (error) {
         if (req.file && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
         }
+
         next(error);
     }
 };
