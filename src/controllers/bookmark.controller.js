@@ -207,16 +207,51 @@ const getBookmarkById = async (req, res) => {
     });
 };
 
+const recordBookmarkVisit = async (req, res) => {
+    const { id } = req.params;
+    const bookmark = await Bookmark.findOneAndUpdate(
+        {
+            _id: id,
+            user: req.currentUser._id
+        },
+        {
+            $inc: {
+                visitCount: 1
+            }
+        },
+        {
+            new: true
+        }
+    );
+
+    if (!bookmark) {
+        throw new NotFoundError("Bookmark not found");
+    }
+
+    res.status(200).json({
+        message: "Visit recorded successfully",
+        bookmark
+    });
+};
+
 const getFrequentlyVisitedBookmarks = async (req, res) => {
     const bookmarks = await Bookmark.find({
-        user: req.currentUser._id
-    }).populate("category")
-    .sort({ visitCount: -1 })
+        user: req.currentUser._id,
+        visitCount: {
+            $gte: 1
+        }
+    })
+        .populate("category")
+        .sort({
+            visitCount: -1,
+            updatedAt: -1
+        });
 
     res.status(200).json({
         bookmarks
     });
 };
+
 
 const toggleFavorite = async (req, res) => {
     const { id } = req.params;
@@ -428,6 +463,7 @@ export {
     getBookmarkById,
     deleteBookmark,
     getFrequentlyVisitedBookmarks,
+    recordBookmarkVisit,
     toggleFavorite,
     exportBookmarks,
     importBookmarks,
