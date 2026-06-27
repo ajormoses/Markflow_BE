@@ -38,7 +38,9 @@ const updateSettings = async (req, res, next) => {
         },
         {
             new: true,
-            runValidators: true
+            runValidators: true,
+            upsert: true,
+            setDefaultsOnInsert: true
         }
     );
 
