@@ -1,9 +1,12 @@
+import fs from 'fs'
 import { Bookmark } from "../models/bookmarks.model.js";
+import { Category } from "../models/category.model.js"
 import { BadRequestError, NotFoundError } from "../errors/index.js"
 import { Settings } from "../models/settings.model.js";
 import cloudinary from "../config/cloudinary.js"
+import { Parser } from "json2csv";
 
-
+const parser = new Parser();
 
 const createBookmark = async (req, res, next) => {
     const { title, description, rating, url, category, isFavorite } = req.body
@@ -261,6 +264,120 @@ const deleteBookmark = async (req, res, next) => {
     });
 };
 
+// import and export bookmarks
+
+const exportBookmarks = async (req, res, next) => {
+    try {
+        const bookmarks = await Bookmark.find({
+            user: req.currentUser._id
+        }).populate("category");
+
+        const data = bookmarks.map((bookmark) => ({
+            Title: bookmark.title,
+            URL: bookmark.url,
+            Description: bookmark.description,
+            Rating: bookmark.rating,
+            Favorite: bookmark.isFavorite,
+            Category: bookmark.category
+                .map((c) => c.name)
+                .join(", "),
+            Visits: bookmark.visitCount,
+            CreatedAt: bookmark.createdAt
+        }));
+        const csv = parser.parse(data);
+        res.header("Content-Type", "text/csv");
+        res.attachment("bookmarks.csv");
+        res.send(csv);
+    } catch (error) {
+        next(error);
+    }
+
+};
+
+const importBookmarks = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            throw new BadRequestError("Please upload a CSV file.");
+        }
+
+        const rows = [];
+        await new Promise((resolve, reject) => {
+            fs.createReadStream(req.file.path)
+                .pipe(csv())
+                .on("data", (row) => {
+                    rows.push(row);
+                })
+                .on("end", resolve)
+                .on("error", reject);
+        });
+
+        let imported = 0;
+        let duplicates = 0;
+
+        for (const row of rows) {
+            // Check duplicate URL
+            const exists = await Bookmark.findOne({
+                user: req.currentUser._id,
+                url: row.URL
+            });
+
+            if (exists) {
+                duplicates++;
+                continue;
+            }
+
+            // Convert categories
+            const categoryNames = row.Category
+                ? row.Category.split(",").map((c) => c.trim())
+                : [];
+
+            const categoryIds = [];
+            for (const name of categoryNames) {
+                let category = await Category.findOne({
+                    name,
+                    user: req.currentUser._id
+                });
+
+                if (!category) {
+                    category = await Category.create({
+                        name,
+                        user: req.currentUser._id
+                    });
+
+                }
+                categoryIds.push(category._id);
+            }
+
+            await Bookmark.create({
+                title: row.Title,
+                url: row.URL,
+                description: row.Description,
+                rating: Number(row.Rating),
+                isFavorite: row.Favorite === "true",
+                category: categoryIds,
+                visitCount: Number(row.Visits || 0),
+                user: req.currentUser._id
+            });
+            imported++;
+        }
+
+        // Delete uploaded CSV
+        fs.unlinkSync(req.file.path);
+        res.status(200).json({
+            message: "Bookmarks imported successfully.",
+            summary: {
+                totalRows: rows.length,
+                imported,
+                duplicates
+            }
+        });
+    } catch (error) {
+        if (req.file && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+        }
+        next(error);
+    }
+};
 
 export {
     createBookmark,
@@ -269,5 +386,7 @@ export {
     getBookmarkById,
     deleteBookmark,
     getFrequentlyVisitedBookmarks,
-    toggleFavorite
+    toggleFavorite,
+    exportBookmarks,
+    importBookmarks
 }

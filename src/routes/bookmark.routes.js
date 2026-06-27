@@ -5,11 +5,12 @@ import {
     getBookmarkById,
     updateBookmark,
     deleteBookmark,
-    getFrequentlyVisitedBookmarks, toggleFavorite
+    getFrequentlyVisitedBookmarks, toggleFavorite, exportBookmarks, importBookmarks
 } from "../controllers/bookmark.controller.js";
 import { validateRequest, requireAuth } from "../middleware/index.js";
 import { createBookmarKValidation, updateBookmarkValidation, validateId } from "../constants/validation/bookmark.validate.js";
 import { upload } from "../middleware/upload.js";
+import { csvUpload } from "../middleware/csvUpload.js";
 
 const router = Router();
 
@@ -47,5 +48,11 @@ router.delete("/bookmarks/:id",
     validateId,
     validateRequest,
     deleteBookmark);
+
+router.get('/bookmarks/export', exportBookmarks);
+
+router.post('/bookmarks/import',
+    csvUpload.single("file"),
+    importBookmarks);
 
 export default router;
