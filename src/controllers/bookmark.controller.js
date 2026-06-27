@@ -1,10 +1,12 @@
-import fs from 'fs'
+import fs from "fs";
+import csv from "csv-parser";
+import { Parser } from "json2csv";
+
 import { Bookmark } from "../models/bookmarks.model.js";
 import { Category } from "../models/category.model.js"
 import { BadRequestError, NotFoundError } from "../errors/index.js"
 import { Settings } from "../models/settings.model.js";
 import cloudinary from "../config/cloudinary.js"
-import { Parser } from "json2csv";
 
 const parser = new Parser();
 
