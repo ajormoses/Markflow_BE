@@ -1,4 +1,5 @@
 import { Settings } from "../models/settings.model.js";
+import { NotFoundError } from "../errors/index.js";
 
 
 const createSettings = async (req, res, next) => {
@@ -20,7 +21,7 @@ const createSettings = async (req, res, next) => {
     });
 }
 
-const updateSettings = async (req, res) => {
+const updateSettings = async (req, res, next) => {
     const { defaultCategory, defaultRating, darkMode, language } = req.body;
 
     const settings = await Settings.findOneAndUpdate(
@@ -42,7 +43,7 @@ const updateSettings = async (req, res) => {
     );
 
     if (!settings) {
-        throw new NotFoundError("Settings not found");
+        return next(new NotFoundError("Settings not found"));
     }
 
     res.status(200).json({
