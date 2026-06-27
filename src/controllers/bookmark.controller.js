@@ -264,6 +264,30 @@ const deleteBookmark = async (req, res, next) => {
     });
 };
 
+const deleteAllBookmark = async (req, res, next) => {
+    const bookmarks = await Bookmark.find(
+        { user: req.currentUser._id },
+        "logo.publicId"
+    );
+
+    await Promise.all(
+        bookmarks.map(async (bookmark) => {
+            if (bookmark.logo?.publicId) {
+                await cloudinary.uploader.destroy(bookmark.logo.publicId);
+            }
+        })
+    );
+
+    const result = await Bookmark.deleteMany({
+        user: req.currentUser._id
+    });
+
+    res.status(200).json({
+        message: "All bookmarks successfully deleted",
+        deletedCount: result.deletedCount
+    });
+};
+
 // import and export bookmarks
 
 const exportBookmarks = async (req, res, next) => {
@@ -388,5 +412,6 @@ export {
     getFrequentlyVisitedBookmarks,
     toggleFavorite,
     exportBookmarks,
-    importBookmarks
+    importBookmarks,
+    deleteAllBookmark
 }
